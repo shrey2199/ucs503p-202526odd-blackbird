@@ -1,0 +1,33 @@
+{
+  "name": "natours",
+  "version": "1.0.0",
+  "description": "Learning node, express and mongo",
+  "main": "app.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Shreyansh Rawal",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.5.1",
+    "groq-sdk": "^0.26.0",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.15.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.1",
+    "nodemailer": "^7.0.3",
+    "prompt-sync": "^4.2.0",
+    "slugify": "^1.6.6",
+    "twilio": "^5.7.1",
+    "validator": "^13.15.15",
+    "xss-clean": "^0.1.4"
+  }
+}
