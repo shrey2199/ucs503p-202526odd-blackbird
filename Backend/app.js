@@ -2,7 +2,6 @@ const express = require('express');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const sanitizer = require('express-mongo-sanitize');
-const xssclean = require('xss-clean');
 const hpp = require('hpp');
 const cors = require('cors');
 
@@ -72,8 +71,6 @@ if(process.env.NODE_ENV === 'development') {
 }
 
 app.use(sanitizer());
-
-app.use(xssclean());
 
 app.use(hpp({
     whitelist: [
