@@ -2,11 +2,19 @@
   "name": "second-serving",
   "version": "1.0.0",
   "description": "Second Serving - Food Donation Platform",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\"",
     "dev:backend": "cd Backend && npm run dev",
     "dev:frontend": "cd Frontend && npm run dev",
-    "install:all": "npm install && cd Backend && npm install && cd ../Frontend && npm install"
+    "install:all": "npm install && cd Backend && npm install && cd ../Frontend && npm install",
+    "build": "cd Frontend && npm install && npm run build",
+    "start": "cd Backend && node server.js",
+    "heroku-postbuild": "npm run build",
+    "postinstall": "cd Backend && npm install --only=production"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

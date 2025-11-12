@@ -102,8 +102,12 @@ if (process.env.NODE_ENV === 'production') {
     const path = require('path');
     const fs = require('fs');
     
-    // In Docker, Backend files are in /app/, Frontend dist is in /app/Frontend/dist
-    const distPath = path.join(__dirname, 'Frontend/dist');
+    // Path to frontend dist (works for both Heroku and Docker)
+    // Heroku: Backend is working dir, so ../Frontend/dist
+    // Docker: Backend files are in /app/, so Frontend/dist
+    const distPath = fs.existsSync(path.join(__dirname, 'Frontend/dist'))
+        ? path.join(__dirname, 'Frontend/dist')
+        : path.join(__dirname, '..', 'Frontend/dist');
     const indexHtmlPath = path.join(distPath, 'index.html');
     
     // Check if dist folder exists
