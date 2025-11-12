@@ -11,6 +11,11 @@ const getApiUrl = () => {
     return envUrl;
   }
   
+  // In production, default to relative path (same domain)
+  if (import.meta.env.PROD) {
+    return '/api/v1';
+  }
+  
   // Default for development
   return 'http://localhost:8000/api/v1';
 };
