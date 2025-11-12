@@ -15,11 +15,23 @@ router.get('/me', (req, res) => {
   });
 });
 
-router.get('/:id/food', donorController.getDonorDonations);
+router.get('/food', donorController.getDonorDonations);
+
+router.get('/hunger-spots', donorController.getNearestHungerSpots);
 
 router.post(
   '/donations',
   donorController.createDonation
+);
+
+router.patch(
+  '/donations/:fid/status',
+  donorController.updateDonationStatus
+);
+
+router.delete(
+  '/donations/:fid',
+  donorController.cancelDonation
 );
 
 module.exports = router;

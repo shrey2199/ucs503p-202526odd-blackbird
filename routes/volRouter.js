@@ -12,9 +12,14 @@ router.get('/me', authController.protect, authController.restrictTo('volunteer')
   });
 });
 
-router.get('/:id/food', authController.protect, authController.restrictTo('volunteer'), volController.getVolunteerDonations);
+// Fixed: Use req.user._id instead of req.params.id
+router.get('/food', authController.protect, authController.restrictTo('volunteer'), volController.getVolunteerDonations);
 
-router.post('/:id/accept/food/:fid', authController.protect, authController.restrictTo('volunteer'), volController.acceptFoodDelivery);
+// Get single food donation (public endpoint for viewing before accepting)
+router.get('/food/:fid', volController.getFoodDonation);
+
+// Fixed: Removed /:id from route - volunteer ID comes from authenticated user
+router.post('/accept/food/:fid', authController.protect, authController.restrictTo('volunteer'), volController.acceptFoodDelivery);
 
 router.patch('/update-status/:fid', authController.protect, authController.restrictTo('volunteer'), volController.updateFoodStatus);
 

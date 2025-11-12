@@ -19,10 +19,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'An phone number is required.'],
         trim: true,
-        unique: true,
+        // unique: true,
         validate: {
-            validator: validator.isMobilePhone,
-            message: 'Phone Number is not valid.'
+            validator: function(phone) {
+                // Accept normalized 10-digit Indian numbers or numbers with country code
+                const normalized = phone.replace(/\D/g, '');
+                // Check if it's a valid Indian mobile number (10 digits starting with 6-9)
+                if (normalized.length === 10) {
+                    return /^[6-9]\d{9}$/.test(normalized);
+                }
+                // Check if it's with country code (12 digits starting with 91)
+                if (normalized.length === 12 && normalized.startsWith('91')) {
+                    return /^91[6-9]\d{9}$/.test(normalized);
+                }
+                // Fallback to validator for other formats
+                return validator.isMobilePhone(phone, 'en-IN') || validator.isMobilePhone(phone);
+            },
+            message: 'Phone Number is not valid. Please enter a valid 10-digit Indian mobile number.'
         }
     },
     photo: {
@@ -75,10 +88,6 @@ const userSchema = new mongoose.Schema({
             required: true
         }
     },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
     // Donor specific fields
     organizationType: {
         type: String,
@@ -119,6 +128,8 @@ const userSchema = new mongoose.Schema({
 }, {timestamps: true});
 
 userSchema.index({ location: '2dsphere' });
+// Compound unique index: same phone number can exist for different user types
+userSchema.index({ phoneNumber: 1, userType: 1 }, { unique: true });
 
 userSchema.pre('save', async function (next) {
 

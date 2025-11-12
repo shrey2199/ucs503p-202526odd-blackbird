@@ -5,9 +5,14 @@ const sendOtp = require('./../utils/phone');
 const User = require('./../models/userModel');
 
 exports.getVolunteerDonations = catchAsync(async (req, res, next) => {
-    const volunteerId = req.params.id;
+    // Fixed: Use authenticated user's ID instead of params
+    const volunteerId = req.user._id;
 
+    // Sort by createdAt in descending order (newest first)
+    // Populate assignedHungerSpot to show delivery location
     const foodEntries = await Food.find({ volunteerId: volunteerId })
+        .populate('assignedHungerSpot', 'name location contactPerson')
+        .sort({ createdAt: -1 });
 
     if (!foodEntries) {
         return next(new appError('No food entries found for this volunteer', 404));
@@ -18,6 +23,26 @@ exports.getVolunteerDonations = catchAsync(async (req, res, next) => {
         results: foodEntries.length,
         data: {
             donations: foodEntries
+        }
+    });
+});
+
+// Get a single food donation by ID (for viewing before accepting)
+exports.getFoodDonation = catchAsync(async (req, res, next) => {
+    const foodId = req.params.fid;
+
+    const food = await Food.findById(foodId)
+        .populate('donorId', 'fullName organizationType phoneNumber')
+        .populate('assignedHungerSpot', 'name location contactPerson');
+
+    if (!food) {
+        return next(new appError('Food donation not found', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            donation: food
         }
     });
 });
@@ -45,6 +70,7 @@ exports.updateFoodStatus = catchAsync(async (req, res, next) => {
 });
 
 exports.acceptFoodDelivery = catchAsync(async (req, res, next) => {
+    // This function already uses req.user._id correctly, no changes needed
     // 1) Verify user exists and is authenticated
     if (!req.user || !req.user._id) {
         return next(new appError('Authentication required', 401));
@@ -75,20 +101,22 @@ exports.acceptFoodDelivery = catchAsync(async (req, res, next) => {
     try {
         // To Hunger Spot
         if (food.assignedHungerSpot?.contactPerson?.phone) {
+            const receiverName = food.assignedHungerSpot.contactPerson.name || 'Contact Person';
             await sendOtp({
                 from: process.env.TWILIO_FROM,
                 to: `whatsapp:+91${food.assignedHungerSpot.contactPerson.phone}`,
-                body: `Volunteer assigned: ${req.user.fullName} (${req.user.phoneNumber})`
-            });
+                body: `*${receiverName}*, Volunteer assigned: ${req.user.fullName} (${req.user.phoneNumber})`
+            }, res);
         }
 
         // To Donor
         if (food.donorId?.phoneNumber) {
+            const receiverName = food.donorId.fullName || 'Donor';
             await sendOtp({
                 from: process.env.TWILIO_FROM,
                 to: `whatsapp:+91${food.donorId.phoneNumber}`,
-                body: `Your donation was accepted by ${req.user.fullName} (${req.user.phoneNumber})`
-            });
+                body: `*${receiverName}*, Your donation was accepted by ${req.user.fullName} (${req.user.phoneNumber})`
+            }, res);
         }
     } catch (err) {
         console.error('Notification failed:', err);

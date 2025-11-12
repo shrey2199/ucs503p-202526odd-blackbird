@@ -15,7 +15,9 @@ process.on('uncaughtException', err => {
 });
 
 const dotenv = require('dotenv');
-dotenv.config({path: './config.env'});
+const path = require('path');
+// Load .env from project root (one level up from Backend folder)
+dotenv.config({path: path.join(__dirname, '..', '.env')});
 const mongoose = require('mongoose');
 
 const app = require('./app');
@@ -40,6 +42,6 @@ const dbcon = async (uri) => {
 dbcon(db_uri);
 
 const port = process.env.PORT || 8000;
-const server = app.listen(port, () => {
+const server = app.listen(port, '0.0.0.0', () => {
     console.log(`App Running on Port: ${port}`);
 });

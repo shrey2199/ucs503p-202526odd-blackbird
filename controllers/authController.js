@@ -15,6 +15,28 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Helper function to normalize phone number
+const normalizePhoneNumber = (phone) => {
+    if (!phone) return phone;
+    // Convert to string and trim
+    let normalized = String(phone).trim();
+    // Remove all non-digit characters
+    normalized = normalized.replace(/\D/g, '');
+    // Remove +91 or 91 prefix if present, keep only the 10 digits
+    if (normalized.startsWith('91') && normalized.length === 12) {
+        normalized = normalized.substring(2);
+    }
+    // If it starts with 0, remove it
+    if (normalized.startsWith('0')) {
+        normalized = normalized.substring(1);
+    }
+    // Ensure it's exactly 10 digits
+    if (normalized.length > 10) {
+        normalized = normalized.slice(-10); // Take last 10 digits
+    }
+    return normalized;
+};
+
 const createAndSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
 
@@ -41,38 +63,173 @@ const createAndSendToken = (user, statusCode, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
+    // Normalize phone number before storing
+    const normalizedPhone = normalizePhoneNumber(req.body.phoneNumber);
+    const originalPhone = req.body.phoneNumber;
+    const userType = req.body.userType;
+    
+    if (!userType || !['donor', 'volunteer'].includes(userType)) {
+        return next(new appError('User type is required and must be either donor or volunteer.', 400));
+    }
+    
+    // Check if user already exists with same phoneNumber AND userType (try multiple formats)
+    // Use collection.findOne to bypass pre-find hook that filters active: false users
+    let existingUser = null;
+    const existingPhoneFormats = [
+        normalizedPhone,
+        originalPhone,
+        originalPhone.replace(/[^\d]/g, ''),
+        `+91${normalizedPhone}`,
+        `91${normalizedPhone}`
+    ];
+    
+    for (const phoneFormat of existingPhoneFormats) {
+        const userDoc = await User.collection.findOne({ 
+            phoneNumber: phoneFormat,
+            userType: userType 
+        });
+        if (userDoc) {
+            existingUser = User.hydrate(userDoc);
+            break;
+        }
+    }
+    
+    // Normalize and update phone number for storage
+    req.body.phoneNumber = normalizedPhone;
+    
+    if (existingUser && existingUser.isVerified) {
+        return next(new appError('User already exists. Please login instead.', 400));
+    }
+    
+    // If unverified user exists with same phoneNumber and userType, update OTP and normalize phone number
+    if (existingUser && !existingUser.isVerified) {
+        const otp = generateOTP();
+        existingUser.otp = otp;
+        existingUser.phoneNumber = normalizedPhone; // Update to normalized format
+        await existingUser.save({ validateBeforeSave: false });
+        
+        const receiverName = existingUser.fullName || 'User';
+        const otpOptions = {
+            from: process.env.TWILIO_FROM,
+            to: `whatsapp:+91${normalizedPhone}`, // Use normalized phone number
+            body: `*${receiverName}*, Your OTP for signing up on Second Serving is: ${otp}`
+        };
+        
+        await sendOtp(otpOptions, res);
+        
+        return res.status(200).json({
+            status: 'success',
+            message: 'OTP Sent! Please verify to complete signup.'
+        });
+    }
 
     const otp = generateOTP();
-    const newUserBody = Object.assign(req.body, {otp: otp});
+    const newUserBody = {
+        ...req.body,
+        otp: otp,
+        active: false, // Set inactive until verified
+        isVerified: false // Explicit (though already default)
+    };
 
-    await User.create(newUserBody);
+    // Debug: Log what we're storing
+    console.log('Signup - Storing user with phone:', {
+        original: originalPhone,
+        normalized: normalizedPhone,
+        bodyPhoneNumber: req.body.phoneNumber
+    });
 
+    const createdUser = await User.create(newUserBody);
+    
+    // Debug: Log what was actually stored
+    console.log('Signup - User created with phone:', createdUser.phoneNumber);
+
+    const receiverName = createdUser.fullName || req.body.fullName || 'User';
     const otpOptions = {
         from: process.env.TWILIO_FROM,
-        to: `whatsapp:+91${req.body.phone}`,
-        body: `Your OTP for signing up on Second Serving is: ${otp}`
+        to: `whatsapp:+91${normalizedPhone}`, // Use normalized phone number
+        body: `*${receiverName}*, Your OTP for signing up on Second Serving is: ${otp}`
     }
 
     await sendOtp(otpOptions, res);
 
     res.status(200).json({
         status: 'success',
-        message: 'OTP Sent !'
+        message: 'OTP Sent! Please verify to complete signup.'
     });
 
 });
 
 exports.verifyOtp = catchAsync(async (req, res, next) => {
-    const { phone, otp } = req.body;
+    const { phone, otp, userType } = req.body;
     
-    const user = await User.findOne({phoneNumber: phone});
-
-    if(!user || !await user.correctOtp(otp.toString(), user.otp)) {
-        return next(new appError('Incorrect OTP'));
+    if (!phone || !otp) {
+        return next(new appError('Phone number and OTP are required.', 400));
+    }
+    
+    if (!userType || !['donor', 'volunteer'].includes(userType)) {
+        return next(new appError('User type is required and must be either donor or volunteer.', 400));
+    }
+    
+    // Normalize phone number for consistent lookup
+    const normalizedPhone = normalizePhoneNumber(phone);
+    
+    // Try multiple formats to find the user with matching phoneNumber AND userType
+    // IMPORTANT: Bypass the pre-find hook that filters active: false users
+    // We need to find unverified users who have active: false
+    // Use collection.findOne() to bypass Mongoose hooks entirely
+    let user = null;
+    const phoneFormats = [
+        normalizedPhone,
+        phone,
+        phone.replace(/[^\d]/g, ''),
+        `+91${normalizedPhone}`,
+        `91${normalizedPhone}`,
+        `whatsapp:+91${normalizedPhone}`
+    ];
+    
+    // Try each format using collection.findOne to bypass hooks, also check userType
+    for (const phoneFormat of phoneFormats) {
+        const userDoc = await User.collection.findOne({ 
+            phoneNumber: phoneFormat,
+            userType: userType 
+        });
+        if (userDoc) {
+            // Hydrate the document directly to bypass hooks
+            user = User.hydrate(userDoc);
+            break;
+        }
+    }
+    
+    if(!user) {
+        // Debug: Log what we're searching for and what exists in DB
+        const allUsers = await User.find({}, 'phoneNumber isVerified').limit(5);
+        console.log('OTP Verification - Phone lookup failed:', {
+            received: phone,
+            normalized: normalizedPhone,
+            searchFormats: [
+                normalizedPhone,
+                phone,
+                phone.replace(/[^\d]/g, ''),
+                `+91${normalizedPhone}`,
+                `91${normalizedPhone}`
+            ],
+            sampleUsersInDB: allUsers.map(u => ({ phone: u.phoneNumber, verified: u.isVerified }))
+        });
+        return next(new appError('User not found. Please signup first.', 404));
     }
 
+    if(user.isVerified) {
+        return next(new appError('User already verified. Please login instead.', 400));
+    }
+
+    if(!await user.correctOtp(otp.toString(), user.otp)) {
+        return next(new appError('Incorrect OTP', 401));
+    }
+
+    // Activate user and mark as verified
     user.otp = undefined;
     user.isVerified = true;
+    user.active = true; // Activate the user
 
     await user.save({
         validateBeforeSave: false
@@ -83,21 +240,37 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-    const { phoneNumber, password } = req.body;
+    const { phoneNumber, password, userType } = req.body;
 
-    if(!phoneNumber || !password) {
+    // Normalize phone number for consistent lookup
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+    if(!normalizedPhone || !password) {
         return next(new appError('Pls provide phone and password', 400));
     }
+    
+    if (!userType || !['donor', 'volunteer'].includes(userType)) {
+        return next(new appError('User type is required and must be either donor or volunteer.', 400));
+    }
 
-    const user = await User.findOne({phoneNumber}).select('+password'); 
+    const user = await User.findOne({
+        phoneNumber: normalizedPhone,
+        userType: userType
+    }).select('+password +active'); 
 
     if (!user || !await user.correctPassword(password, user.password)) {
         return next(new appError('Incorrect Phone or Password', 401));
     }
 
-    // if(user.active === false) {
-    //     User.findByIdAndUpdate(req.user.id, {active: true});
-    // }
+    // Check if user is verified
+    if (!user.isVerified) {
+        return next(new appError('Please verify your account first. Check your phone for OTP.', 403));
+    }
+
+    // Check if user is active
+    if (!user.active) {
+        return next(new appError('Your account is inactive. Please contact support.', 403));
+    }
 
     createAndSendToken(user, 200, res);
 
@@ -125,7 +298,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
     // check if user still exists
 
-    const currentUser = await User.findById(decoded.id);
+    const currentUser = await User.findById(decoded.id).select('+active');
     if(!currentUser) {
         return next(new appError('The user of this token does not exist', 401));
     }
@@ -134,6 +307,15 @@ exports.protect = catchAsync(async (req, res, next) => {
         return next(new appError('The password was recently changed. Pls login again.', 401))
     }
 
+    // Check if user is verified
+    if (!currentUser.isVerified) {
+        return next(new appError('Please verify your account to access this resource.', 403));
+    }
+
+    // Check if user is active
+    if (!currentUser.active) {
+        return next(new appError('Your account is inactive. Please contact support.', 403));
+    }
 
     req.user = currentUser;
     next();
@@ -163,10 +345,11 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
     
     try {
+        const receiverName = user.fullName || 'User';
         const otpOptions = {
             from: process.env.TWILIO_FROM,
             to: `whatsapp:+91${req.body.phone}`,
-            body: `Your OTP for changing password on Second Serving is: ${otp}`
+            body: `*${receiverName}*, Your OTP for changing password on Second Serving is: ${otp}`
         }
     
         await sendOtp(otpOptions, res);
@@ -223,4 +406,3 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     createAndSendToken(user, 200, res);
 
 });
-

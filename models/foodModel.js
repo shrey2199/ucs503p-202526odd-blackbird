@@ -44,9 +44,14 @@ const foodSchema = new mongoose.Schema({
   },
   pickupLocation: {
     address: String,
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
     coordinates: {
-      latitude: Number,
-      longitude: Number
+      type: [Number],  // [longitude, latitude] - GeoJSON format
+      required: true
     }
   },
   assignedHungerSpot: {
@@ -56,7 +61,7 @@ const foodSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'volunteer_assigned', 'in_transit', 'delivered', 'rejected'],
+    enum: ['pending', 'volunteer_assigned', 'in_transit', 'delivered', 'rejected', 'cancelled'],
     default: 'pending'
   },
   requestTime: {
@@ -78,7 +83,7 @@ const foodSchema = new mongoose.Schema({
 });
 
 // Index for geospatial queries and status filtering
-foodSchema.index({ "pickupLocation.coordinates": "2dsphere" });
+foodSchema.index({ "pickupLocation": "2dsphere" });  // Fixed: index on pickupLocation, not coordinates
 foodSchema.index({ status: 1, requestTime: 1 });
 foodSchema.index({ donorId: 1, status: 1 });
 
