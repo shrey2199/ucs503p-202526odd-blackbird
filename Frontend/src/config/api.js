@@ -16,7 +16,10 @@ const getApiUrl = () => {
     return '/api/v1';
   }
   
-  // Default for development
+  // Default for development - use HTTPS if page is served over HTTPS
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    return 'https://localhost:8000/api/v1';
+  }
   return 'http://localhost:8000/api/v1';
 };
 

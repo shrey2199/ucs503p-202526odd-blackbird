@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url)
@@ -15,7 +16,20 @@ export default defineConfig({
   envPrefix: 'VITE_',
   server: {
     host: '0.0.0.0', // Allow access from network
-    port: 5173
+    port: 5173,
+    https: (() => {
+      // Check if HTTPS certificates exist
+      const certPath = path.resolve(__dirname, '..', 'certs', 'localhost+1.pem');
+      const keyPath = path.resolve(__dirname, '..', 'certs', 'localhost+1-key.pem');
+      
+      if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+        return {
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath)
+        };
+      }
+      return false; // Use HTTP if certificates don't exist
+    })()
   },
   build: {
     // Ensure CSS is properly extracted and bundled
