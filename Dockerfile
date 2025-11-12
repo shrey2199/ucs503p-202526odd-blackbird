@@ -15,8 +15,8 @@ COPY Frontend/ ./Frontend/
 
 # Copy .env files for build (Vite reads from project root)
 # Prioritize .env.production if it exists, otherwise use .env
-COPY .env.production* ./
-COPY .env* ./
+# COPY .env.production* ./
+# COPY .env* ./
 
 # Build frontend (will use .env.production if NODE_ENV=production)
 RUN cd Frontend && npm run build
