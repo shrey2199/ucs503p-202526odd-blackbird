@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  second-serving:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: second-serving
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.production
+    restart: unless-stopped
+

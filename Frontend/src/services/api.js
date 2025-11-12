@@ -1,0 +1,52 @@
+import axios from 'axios';
+import { API_URL } from '../config/api';
+
+// Create axios instance
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Don't redirect if this is a login request (failed login should show error, not redirect)
+      const isLoginRequest = error.config?.url?.includes('/users/login');
+      const isSignupRequest = error.config?.url?.includes('/users/signup');
+      const isVerifyRequest = error.config?.url?.includes('/users/verify');
+      
+      // Only redirect if it's not an auth-related request and we're not already on login page
+      if (!isLoginRequest && !isSignupRequest && !isVerifyRequest) {
+        // Token expired or invalid - only redirect if not already on login/signup pages
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/login' && currentPath !== '/signup' && currentPath !== '/verify-otp') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+
