@@ -9,6 +9,7 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuClosing, setIsMobileMenuClosing] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const [mobileMenuPosition, setMobileMenuPosition] = useState({ top: 0, right: 0 });
   const dropdownRef = useRef(null);
@@ -42,6 +43,16 @@ const Layout = ({ children }) => {
     }
   }, [isMobileMenuOpen]);
 
+  // Handle mobile menu close with animation
+  const handleMobileMenuClose = () => {
+    setIsMobileMenuClosing(true);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      setIsMobileMenuOpen(false);
+      setIsMobileMenuClosing(false);
+    }, 300); // Match animation duration
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -51,7 +62,7 @@ const Layout = ({ children }) => {
       }
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) &&
           mobileMenuButtonRef.current && !mobileMenuButtonRef.current.contains(event.target)) {
-        setIsMobileMenuOpen(false);
+        handleMobileMenuClose();
       }
     };
 
@@ -214,7 +225,13 @@ const Layout = ({ children }) => {
                   <div className="sm:hidden relative">
                     <button
                       ref={mobileMenuButtonRef}
-                      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                      onClick={() => {
+                        if (isMobileMenuOpen) {
+                          handleMobileMenuClose();
+                        } else {
+                          setIsMobileMenuOpen(true);
+                        }
+                      }}
                       className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
                       aria-label="Menu"
                     >
@@ -223,12 +240,27 @@ const Layout = ({ children }) => {
                       </svg>
                     </button>
 
+                    {/* Mobile Menu Backdrop */}
+                    {(isMobileMenuOpen || isMobileMenuClosing) && (
+                      <div 
+                        className={`fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-[9999] ${
+                          isMobileMenuClosing ? 'animate-fadeOut' : 'animate-fadeIn'
+                        }`}
+                        onClick={handleMobileMenuClose}
+                      />
+                    )}
+
                     {/* Mobile Menu Dropdown */}
-                    {isMobileMenuOpen && (
+                    {(isMobileMenuOpen || isMobileMenuClosing) && (
                       <div 
                         ref={mobileMenuRef}
-                        className="fixed w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[10000]"
-                        style={{ top: `${mobileMenuPosition.top}px`, right: `${mobileMenuPosition.right}px` }}
+                        className={`fixed w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[10000] ${
+                          isMobileMenuClosing ? 'animate-slideUp' : 'animate-slideDown'
+                        }`}
+                        style={{ 
+                          top: `${mobileMenuPosition.top}px`, 
+                          right: `${mobileMenuPosition.right}px`
+                        }}
                       >
                         {/* Theme Section */}
                         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
@@ -237,7 +269,7 @@ const Layout = ({ children }) => {
                             <button
                               onClick={() => {
                                 handleThemeChange('system');
-                                setIsMobileMenuOpen(false);
+                                handleMobileMenuClose();
                               }}
                               className={`w-full px-3 py-2 text-left flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ${
                                 theme === 'system' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
@@ -256,7 +288,7 @@ const Layout = ({ children }) => {
                             <button
                               onClick={() => {
                                 handleThemeChange('light');
-                                setIsMobileMenuOpen(false);
+                                handleMobileMenuClose();
                               }}
                               className={`w-full px-3 py-2 text-left flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ${
                                 theme === 'light' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
@@ -275,7 +307,7 @@ const Layout = ({ children }) => {
                             <button
                               onClick={() => {
                                 handleThemeChange('dark');
-                                setIsMobileMenuOpen(false);
+                                handleMobileMenuClose();
                               }}
                               className={`w-full px-3 py-2 text-left flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors ${
                                 theme === 'dark' ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'
@@ -313,7 +345,7 @@ const Layout = ({ children }) => {
                           <button
                             onClick={() => {
                               handleLogout();
-                              setIsMobileMenuOpen(false);
+                              handleMobileMenuClose();
                             }}
                             className="w-full px-3 py-2 text-left flex items-center space-x-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                           >
