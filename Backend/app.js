@@ -49,7 +49,23 @@ if (process.env.NODE_ENV === 'production') {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-app.use(helmet());
+// Configure Helmet to allow map tiles
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://cdnjs.cloudflare.com"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding map tiles
+}));
 
 if(process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));

@@ -17,4 +17,10 @@ export default defineConfig({
     host: '0.0.0.0', // Allow access from network
     port: 5173
   },
+  build: {
+    // Ensure CSS is properly extracted and bundled
+    cssCodeSplit: false,
+    // Increase chunk size warning limit for Leaflet
+    chunkSizeWarningLimit: 1000,
+  },
 })

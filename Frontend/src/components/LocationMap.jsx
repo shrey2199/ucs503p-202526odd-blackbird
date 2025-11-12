@@ -3,6 +3,11 @@ import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
+// Ensure Leaflet is available globally
+if (typeof window !== 'undefined') {
+  window.L = L;
+}
+
 // Fix for default marker icon in React
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -53,6 +58,7 @@ const LocationMap = ({
   const [position, setPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [shouldUpdateCenter, setShouldUpdateCenter] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef(null);
   const lastStoredLocationRef = useRef(null);
 
@@ -135,6 +141,17 @@ const LocationMap = ({
   const currentCenter = position || defaultCenter;
   const currentZoom = position ? 16 : 5; // Zoom in more when position is set
 
+  // Ensure map is ready after component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof L !== 'undefined') {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setMapReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   // Format coordinates for display
   const formatCoordinate = (coord) => {
     if (!coord) return 'N/A';
@@ -160,20 +177,32 @@ const LocationMap = ({
             </div>
           </div>
         )}
-        {typeof window !== 'undefined' && (
+        {typeof window !== 'undefined' && typeof L !== 'undefined' && mapReady && (
           <MapContainer
             center={currentCenter}
             zoom={currentZoom}
-            style={{ height: '100%', width: '100%' }}
+            style={{ height: '100%', width: '100%', zIndex: 0 }}
             scrollWheelZoom={true}
             doubleClickZoom={true}
             zoomControl={true}
             ref={mapRef}
             dragging={true}
+            whenReady={() => {
+              // Force map to invalidate size after tiles load
+              if (mapRef.current) {
+                const map = mapRef.current;
+                setTimeout(() => {
+                  map.invalidateSize();
+                }, 100);
+              }
+            }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              subdomains={['a', 'b', 'c']}
+              maxZoom={19}
+              minZoom={1}
             />
             <MapClickHandler onMapClick={handleMapClick} />
             {position && (

@@ -15,8 +15,8 @@ COPY Frontend/ ./Frontend/
 
 # Copy .env files for build (Vite reads from project root)
 # Prioritize .env.production if it exists, otherwise use .env
-# COPY .env.production* ./
-# COPY .env* ./
+COPY .env.production* ./
+COPY .env* ./
 
 # Build frontend (will use .env.production if NODE_ENV=production)
 RUN cd Frontend && npm run build
@@ -39,7 +39,7 @@ COPY Backend/ ./
 COPY --from=frontend-builder /app/Frontend/dist ./Frontend/dist
 
 # Copy .env file for runtime
-# COPY .env* ./
+COPY .env* ./
 
 # Expose port
 EXPOSE 8000

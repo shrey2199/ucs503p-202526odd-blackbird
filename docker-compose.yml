@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   second-serving:
     build:
