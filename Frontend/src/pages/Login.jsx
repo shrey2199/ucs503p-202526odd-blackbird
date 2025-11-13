@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
@@ -15,9 +15,17 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
   
   // Get returnTo from location state
   const returnTo = location.state?.returnTo;
+
+  // Clear location state after reading the message
+  useEffect(() => {
+    if (location.state?.message) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -143,11 +151,20 @@ const Login = () => {
             </button>
           </div>
           
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg animate-fade-in">
+              <div className="flex items-center space-x-2">
+                <span className="text-green-500 text-xl">✅</span>
+                <p className="text-green-700 dark:text-green-400 font-medium">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-fade-in">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg animate-fade-in">
               <div className="flex items-center space-x-2">
                 <span className="text-red-500 text-xl">⚠️</span>
-                <p className="text-red-700 font-medium">{error}</p>
+                <p className="text-red-700 dark:text-red-400 font-medium">{error}</p>
               </div>
             </div>
           )}
@@ -199,6 +216,17 @@ const Login = () => {
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
+
+          {userType && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => navigate('/forgot-password')}
+                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
 
           <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             Don't have an account?{' '}

@@ -186,9 +186,9 @@ userSchema.methods.changedPasswordAfter = async function (JWTTimeStamp) {
 userSchema.methods.createPasswordResetToken = function () {
     const resetToken = generateOTP();
 
-    this.passwordResetToken = bcrypt.hash(resetToken, 12);
-
-    this.passwordResetExpires = Date.now() + 10 * 60 * 1000 // 10 minutes
+    // Store plain token for OTP verification (expires in 10 minutes)
+    this.passwordResetToken = resetToken;
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     return resetToken;
 };

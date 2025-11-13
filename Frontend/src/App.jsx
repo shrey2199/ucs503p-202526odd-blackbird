@@ -12,7 +12,10 @@ import DonorDashboard from './pages/DonorDashboard';
 import VolunteerDashboard from './pages/VolunteerDashboard';
 import HungerSpotDashboard from './pages/HungerSpotDashboard';
 import HungerSpotAccount from './pages/HungerSpotAccount';
+import UserAccount from './pages/UserAccount';
 import AcceptDonation from './pages/AcceptDonation';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -26,6 +29,8 @@ function App() {
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/hunger-spot/login" element={<HungerSpotLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/donor/dashboard"
             element={
@@ -55,6 +60,14 @@ function App() {
             element={
               <ProtectedRoute requiredUserType="hungerSpot">
                 <HungerSpotAccount />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <UserAccount />
               </ProtectedRoute>
             }
           />

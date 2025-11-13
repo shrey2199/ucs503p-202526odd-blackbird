@@ -97,6 +97,11 @@ export const AuthProvider = ({ children }) => {
     setHungerSpot(updatedHungerSpot);
   };
 
+  const updateUser = (updatedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   const value = {
     user,
     hungerSpot,
@@ -107,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuth,
     updateHungerSpot,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

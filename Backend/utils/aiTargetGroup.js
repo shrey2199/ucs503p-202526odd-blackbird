@@ -34,7 +34,7 @@ const getTargetGroupFromAI = async (category, description) => {
       ?.replace(/"/g, '')
       ?.replace('.', '');
 
-    console.log(`Target Group: ${answer}`);
+    // Target Group determined
 
     return ["young", "everyone"].includes(answer) ? answer : "everyone";
 

@@ -131,17 +131,11 @@ exports.signup = catchAsync(async (req, res, next) => {
         isVerified: false // Explicit (though already default)
     };
 
-    // Debug: Log what we're storing
-    console.log('Signup - Storing user with phone:', {
-        original: originalPhone,
-        normalized: normalizedPhone,
-        bodyPhoneNumber: req.body.phoneNumber
-    });
+    // Debug: Log what we're storing (removed console.log)
 
     const createdUser = await User.create(newUserBody);
     
-    // Debug: Log what was actually stored
-    console.log('Signup - User created with phone:', createdUser.phoneNumber);
+    // Debug: Log what was actually stored (removed console.log)
 
     const receiverName = createdUser.fullName || req.body.fullName || 'User';
     const otpOptions = {
@@ -157,6 +151,48 @@ exports.signup = catchAsync(async (req, res, next) => {
         message: 'OTP Sent! Please verify to complete signup.'
     });
 
+});
+
+exports.resendOtp = catchAsync(async (req, res, next) => {
+    const { phone, userType } = req.body;
+
+    if (!phone || !userType) {
+        return next(new appError('Phone number and user type are required.', 400));
+    }
+
+    // Normalize phone number
+    const normalizedPhone = normalizePhoneNumber(phone);
+
+    // Find unverified user with same phoneNumber and userType
+    const existingUser = await User.findOne({
+        phoneNumber: normalizedPhone,
+        userType: userType,
+        isVerified: false
+    });
+
+    if (!existingUser) {
+        return next(new appError('No unverified account found. Please signup first.', 404));
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+    existingUser.otp = otp;
+    await existingUser.save({ validateBeforeSave: false });
+
+    // Send OTP via WhatsApp
+    const receiverName = existingUser.fullName || 'User';
+    const otpOptions = {
+        from: process.env.TWILIO_FROM,
+        to: `whatsapp:+91${normalizedPhone}`,
+        body: `*${receiverName}*, Your OTP for signing up on Second Serving is: ${otp}`
+    };
+
+    await sendOtp(otpOptions, res);
+
+    res.status(200).json({
+        status: 'success',
+        message: 'OTP resent! Please check your WhatsApp.'
+    });
 });
 
 exports.verifyOtp = catchAsync(async (req, res, next) => {
@@ -201,20 +237,7 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
     }
     
     if(!user) {
-        // Debug: Log what we're searching for and what exists in DB
-        const allUsers = await User.find({}, 'phoneNumber isVerified').limit(5);
-        console.log('OTP Verification - Phone lookup failed:', {
-            received: phone,
-            normalized: normalizedPhone,
-            searchFormats: [
-                normalizedPhone,
-                phone,
-                phone.replace(/[^\d]/g, ''),
-                `+91${normalizedPhone}`,
-                `91${normalizedPhone}`
-            ],
-            sampleUsersInDB: allUsers.map(u => ({ phone: u.phoneNumber, verified: u.isVerified }))
-        });
+        // Debug: Log what we're searching for and what exists in DB (removed console.log)
         return next(new appError('User not found. Please signup first.', 404));
     }
 
@@ -348,7 +371,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
         const receiverName = user.fullName || 'User';
         const otpOptions = {
             from: process.env.TWILIO_FROM,
-            to: `whatsapp:+91${req.body.phone}`,
+            to: `whatsapp:+91${user.phoneNumber}`,
             body: `*${receiverName}*, Your OTP for changing password on Second Serving is: ${otp}`
         }
     
@@ -356,7 +379,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
         
         res.status(200).json({
             status: 'success',
-            message: 'Token sent to email.'
+            message: 'OTP sent to your WhatsApp number.'
         });
     } catch(err) {
 
@@ -364,7 +387,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
         user.passwordResetExpires = undefined;
         await user.save({validateBeforeSave: false});
 
-        return next(new appError('There was an error sending the otp.', 500));
+        return next(new appError('There was an error sending the OTP.', 500));
 
     }
 });
@@ -396,7 +419,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.user.id).select('+password');
 
     if(! await user.correctPassword(req.body.passwordCurrent, user.password)) {
-        return next(new appError('Your current password is wrong', 401));
+        return next(new appError('Your current password is wrong', 400));
     }
 
     user.password = req.body.password;

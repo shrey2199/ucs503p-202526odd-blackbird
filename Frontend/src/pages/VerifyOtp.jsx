@@ -2,17 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import Layout from '../components/Layout';
 
 const VerifyOtp = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { showToast } = useToast();
   const [otp, setOtp] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [userType, setUserType] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     // Get phone number and userType from navigation state
@@ -24,7 +28,34 @@ const VerifyOtp = () => {
     }
     setPhoneNumber(phone);
     setUserType(type);
+    // Start cooldown timer when page loads (OTP was just sent during signup)
+    setCooldown(60);
   }, [location, navigate]);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
+  const handleResendOtp = async () => {
+    if (cooldown > 0) return;
+    
+    setResending(true);
+    setError('');
+    
+    try {
+      await authService.resendOtp(phoneNumber, userType);
+      showToast('OTP resent! Please check your WhatsApp.', 'success');
+      setCooldown(60); // 60 second cooldown
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend OTP. Please try again.');
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,6 +120,16 @@ const VerifyOtp = () => {
               {loading ? 'Verifying...' : 'Verify OTP'}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleResendOtp}
+              disabled={resending || cooldown > 0}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resending ? 'Resending...' : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+            </button>
+          </div>
         </div>
       </div>
     </Layout>

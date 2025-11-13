@@ -12,26 +12,27 @@ const filterObj = (obj, ...allowedFields) => {
     return newObject;
 }
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-    const users = await User.find();
-
-    res.status(200).json({
-        status: 'success',
-        results: users.length,
-        data: {
-            users
-        }
-    });
-    
-});
-
 exports.updateMe = catchAsync(async (req, res, next) => {
 
     if(req.body.password || req.body.passwordConfirm) {
-        return next(new appError('This route cannot update passwords', 400));
+        return next(new appError('This route cannot update passwords. Use /updateMyPassword instead.', 400));
     }
 
-    const filteredBody = filterObj(req.body, 'name', 'email');
+    // Filter allowed fields
+    const allowedFields = ['fullName', 'location', 'organizationType'];
+    const filteredBody = filterObj(req.body, ...allowedFields);
+    
+    // If updating location, ensure required fields are present
+    if (filteredBody.location) {
+        if (!filteredBody.location.coordinates || !Array.isArray(filteredBody.location.coordinates) || filteredBody.location.coordinates.length !== 2) {
+            return next(new appError('Location must include coordinates as [longitude, latitude]', 400));
+        }
+        // Ensure location type is set
+        if (!filteredBody.location.type) {
+            filteredBody.location.type = 'Point';
+        }
+    }
+
     const user = await User.findByIdAndUpdate(req.user.id, filteredBody, {
         new: true,
         runValidators: true
@@ -45,40 +46,3 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     })
 
 });
-
-exports.deleteMe = catchAsync(async (req, res, next) => {
-    await User.findByIdAndUpdate(req.user.id, {active: false});
-
-    res.status(204).json({
-        status: 'success',
-        data: null
-    });
-});
-
-exports.getUser = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'This route is not yet defined.'
-    })
-};
-
-exports.createUser = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'This route is not yet defined.'
-    })
-};
-
-exports.updateUser = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'This route is not yet defined.'
-    })
-};
-
-exports.deleteUser = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'This route is not yet defined.'
-    })
-};

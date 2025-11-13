@@ -33,7 +33,9 @@ api.interceptors.response.use(
       const isHungerSpotLoginRequest = error.config?.url?.includes('/hungerSpots/login');
       const isSignupRequest = error.config?.url?.includes('/users/signup');
       const isVerifyRequest = error.config?.url?.includes('/users/verify');
-      const isPasswordUpdateRequest = error.config?.url?.includes('/me/password') || error.config?.url?.includes('/updateMyPassword');
+      const isPasswordUpdateRequest = error.config?.url?.includes('/me/password') || 
+                                      error.config?.url?.includes('/updateMyPassword') ||
+                                      error.config?.url?.includes('/users/updateMyPassword');
       
       // Only redirect if it's not an auth-related request and we're not already on login page
       if (!isLoginRequest && !isHungerSpotLoginRequest && !isSignupRequest && !isVerifyRequest && !isPasswordUpdateRequest) {
