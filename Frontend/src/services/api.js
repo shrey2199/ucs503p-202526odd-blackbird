@@ -30,17 +30,24 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Don't redirect if this is a login request (failed login should show error, not redirect)
       const isLoginRequest = error.config?.url?.includes('/users/login');
+      const isHungerSpotLoginRequest = error.config?.url?.includes('/hungerSpots/login');
       const isSignupRequest = error.config?.url?.includes('/users/signup');
       const isVerifyRequest = error.config?.url?.includes('/users/verify');
       
       // Only redirect if it's not an auth-related request and we're not already on login page
-      if (!isLoginRequest && !isSignupRequest && !isVerifyRequest) {
+      if (!isLoginRequest && !isHungerSpotLoginRequest && !isSignupRequest && !isVerifyRequest) {
         // Token expired or invalid - only redirect if not already on login/signup pages
         const currentPath = window.location.pathname;
-        if (currentPath !== '/login' && currentPath !== '/signup' && currentPath !== '/verify-otp') {
+        if (currentPath !== '/login' && currentPath !== '/signup' && currentPath !== '/verify-otp' && currentPath !== '/hunger-spot/login') {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          window.location.href = '/login';
+          localStorage.removeItem('hungerSpot');
+          // Redirect to appropriate login page based on current path
+          if (currentPath.startsWith('/hunger-spot')) {
+            window.location.href = '/hunger-spot/login';
+          } else {
+            window.location.href = '/login';
+          }
         }
       }
     }

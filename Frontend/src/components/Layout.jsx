@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDarkMode } from '../context/DarkModeContext';
 
 const Layout = ({ children }) => {
-  const { user, logout, userType } = useAuth();
+  const { user, hungerSpot, logout, userType } = useAuth();
   const { theme, isDark, setThemeMode } = useDarkMode();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -19,7 +19,11 @@ const Layout = ({ children }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    if (userType === 'hungerSpot') {
+      navigate('/hunger-spot/login');
+    } else {
+      navigate('/login');
+    }
   };
 
   // Calculate dropdown position when opening
@@ -128,7 +132,7 @@ const Layout = ({ children }) => {
             </div>
             {/* Right side - Theme selector dropdown, User info and logout */}
             <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
-              {user ? (
+              {(user || hungerSpot) ? (
                 <>
                   {/* Desktop: Show theme selector, user info, and logout */}
                   <div className="hidden sm:flex items-center space-x-2 md:space-x-4">
@@ -206,11 +210,15 @@ const Layout = ({ children }) => {
                     </div>
                     <div className="flex items-center space-x-2 md:space-x-3 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-primary-50 to-green-50 dark:from-primary-900/30 dark:to-green-900/30 rounded-full border border-primary-200 dark:border-primary-700">
                       <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-xs md:text-sm">
-                        {user.fullName.charAt(0).toUpperCase()}
+                        {user ? user.fullName.charAt(0).toUpperCase() : hungerSpot?.name.charAt(0).toUpperCase() || 'H'}
                       </div>
                       <div className="flex flex-col hidden md:flex">
-                        <span className="text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">{user.fullName}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{userType}</span>
+                        <span className="text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {user ? user.fullName : hungerSpot?.name || 'Hunger Spot'}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                          {userType === 'hungerSpot' ? 'Hunger Spot' : userType}
+                        </span>
                       </div>
                     </div>
                     <button
@@ -328,14 +336,20 @@ const Layout = ({ children }) => {
 
                         {/* User Info Section */}
                         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">User Info</p>
+                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
+                            {userType === 'hungerSpot' ? 'Hunger Spot Info' : 'User Info'}
+                          </p>
                           <div className="flex items-center space-x-2">
                             <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                              {user.fullName.charAt(0).toUpperCase()}
+                              {user ? user.fullName.charAt(0).toUpperCase() : hungerSpot?.name.charAt(0).toUpperCase() || 'H'}
                             </div>
                             <div className="flex flex-col">
-                              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.fullName}</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{userType}</span>
+                              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                {user ? user.fullName : hungerSpot?.name || 'Hunger Spot'}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                {userType === 'hungerSpot' ? 'Hunger Spot' : userType}
+                              </span>
                             </div>
                           </div>
                         </div>

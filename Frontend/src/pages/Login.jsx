@@ -91,6 +91,23 @@ const Login = () => {
                 <span className="text-xl sm:text-2xl">🚚</span>
                 <span>Login as Volunteer</span>
               </button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-400">or</span>
+                </div>
+              </div>
+
+              <a
+                href="/hunger-spot/login"
+                className="w-full py-3 sm:py-4 px-4 sm:px-6 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-2 sm:space-x-3"
+              >
+                <span className="text-xl sm:text-2xl">🏢</span>
+                <span>Login as Hunger Spot</span>
+              </a>
             </div>
 
             <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">

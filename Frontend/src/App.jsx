@@ -7,8 +7,10 @@ import Home from './pages/Home';
 import Signup from './pages/Signup';
 import VerifyOtp from './pages/VerifyOtp';
 import Login from './pages/Login';
+import HungerSpotLogin from './pages/HungerSpotLogin';
 import DonorDashboard from './pages/DonorDashboard';
 import VolunteerDashboard from './pages/VolunteerDashboard';
+import HungerSpotDashboard from './pages/HungerSpotDashboard';
 import AcceptDonation from './pages/AcceptDonation';
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/hunger-spot/login" element={<HungerSpotLogin />} />
           <Route
             path="/donor/dashboard"
             element={
@@ -35,6 +38,14 @@ function App() {
             element={
               <ProtectedRoute requiredUserType="volunteer">
                 <VolunteerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hunger-spot/dashboard"
+            element={
+              <ProtectedRoute requiredUserType="hungerSpot">
+                <HungerSpotDashboard />
               </ProtectedRoute>
             }
           />

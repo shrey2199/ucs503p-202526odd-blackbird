@@ -1,14 +1,32 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 
 const Home = () => {
-  const { user, userType } = useAuth();
+  const { user, hungerSpot, userType } = useAuth();
+  const navigate = useNavigate();
 
-  if (user) {
-    // User is logged in, redirect to their dashboard
-    const dashboardPath = userType === 'donor' ? '/donor/dashboard' : '/volunteer/dashboard';
-    window.location.href = dashboardPath;
+  useEffect(() => {
+    // Redirect logged in users to their dashboard
+    if (user || hungerSpot) {
+      let dashboardPath;
+      if (userType === 'donor') {
+        dashboardPath = '/donor/dashboard';
+      } else if (userType === 'volunteer') {
+        dashboardPath = '/volunteer/dashboard';
+      } else if (userType === 'hungerSpot') {
+        dashboardPath = '/hunger-spot/dashboard';
+      }
+      
+      if (dashboardPath) {
+        navigate(dashboardPath, { replace: true });
+      }
+    }
+  }, [user, hungerSpot, userType, navigate]);
+
+  // Show loading or nothing while redirecting
+  if (user || hungerSpot) {
     return null;
   }
 

@@ -77,7 +77,7 @@ exports.getNearestHungerSpots = catchAsync(async (req, res, next) => {
     // Get up to 3 nearest hunger spots
     const nearestSpots = await HungerSpot.find(query)
         .limit(3)
-        .select('name location contactPerson capacity currentLoad');
+        .select('name location contactPerson');
 
     res.status(200).json({
         status: 'success',

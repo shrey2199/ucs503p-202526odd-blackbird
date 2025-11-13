@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children, requiredUserType }) => {
-  const { user, userType, loading } = useAuth();
+  const { user, hungerSpot, userType, loading } = useAuth();
 
   if (loading) {
     return (
@@ -12,7 +12,14 @@ const ProtectedRoute = ({ children, requiredUserType }) => {
     );
   }
 
-  if (!user) {
+  // Check if user is logged in (either user or hungerSpot)
+  const isAuthenticated = user || hungerSpot;
+
+  if (!isAuthenticated) {
+    // Redirect to appropriate login page
+    if (requiredUserType === 'hungerSpot') {
+      return <Navigate to="/hunger-spot/login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
