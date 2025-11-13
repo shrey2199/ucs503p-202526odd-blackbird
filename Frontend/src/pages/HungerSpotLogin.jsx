@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { hungerSpotService } from '../services/hungerSpotService';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
@@ -7,6 +7,7 @@ import SearchableSelect from '../components/SearchableSelect';
 
 const HungerSpotLogin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { loginHungerSpot } = useAuth();
   const [hungerSpots, setHungerSpots] = useState([]);
   const [selectedState, setSelectedState] = useState('');
@@ -18,10 +19,18 @@ const HungerSpotLogin = () => {
   const [loading, setLoading] = useState(false);
   const [loadingSpots, setLoadingSpots] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
 
   useEffect(() => {
     loadHungerSpots();
   }, []);
+
+  // Clear location state after reading the message to prevent it from showing again on refresh
+  useEffect(() => {
+    if (location.state?.message) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Filter hunger spots by selected state
   const filteredHungerSpots = useMemo(() => {
@@ -116,6 +125,15 @@ const HungerSpotLogin = () => {
             </p>
           </div>
           
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg animate-fade-in">
+              <div className="flex items-center space-x-2">
+                <span className="text-green-500 text-xl">✅</span>
+                <p className="text-green-700 dark:text-green-400 font-medium">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg animate-fade-in">
               <div className="flex items-center space-x-2">

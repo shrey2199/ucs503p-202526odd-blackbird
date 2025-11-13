@@ -25,6 +25,28 @@ export const hungerSpotService = {
     const response = await api.patch('/hungerSpots/me/status', { isActive });
     return response.data;
   },
+
+  // Update password
+  updatePassword: async (passwordCurrent, password, passwordConfirm) => {
+    const response = await api.patch('/hungerSpots/me/password', {
+      passwordCurrent,
+      password,
+      passwordConfirm
+    });
+    return response.data;
+  },
+
+  // Update profile
+  updateProfile: async (profileData) => {
+    const response = await api.patch('/hungerSpots/me', profileData);
+    return response.data;
+  },
+
+  // Mark donation as delivered
+  markDonationDelivered: async (donationId) => {
+    const response = await api.patch(`/hungerSpots/me/donations/${donationId}/delivered`);
+    return response.data;
+  },
 };
 
 

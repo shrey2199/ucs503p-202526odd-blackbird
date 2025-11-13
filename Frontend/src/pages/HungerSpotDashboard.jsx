@@ -8,14 +8,45 @@ const HungerSpotDashboard = () => {
   const { hungerSpot, updateHungerSpot } = useAuth();
   const { showToast } = useToast();
   const [donations, setDonations] = useState([]);
+  const [filteredDonations, setFilteredDonations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [markingDelivered, setMarkingDelivered] = useState({});
+  
+  // Filter and search state
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (hungerSpot?._id) {
       loadDonations();
     }
   }, [hungerSpot]);
+
+  // Filter and search donations
+  useEffect(() => {
+    let filtered = [...donations];
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(donation => donation.status === statusFilter);
+    }
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(donation => {
+        const donorName = donation.donorId?.fullName?.toLowerCase() || '';
+        const category = donation.foodDetails?.category?.toLowerCase() || '';
+        const description = donation.foodDetails?.description?.toLowerCase() || '';
+        return donorName.includes(searchLower) || 
+               category.includes(searchLower) || 
+               description.includes(searchLower);
+      });
+    }
+
+    setFilteredDonations(filtered);
+  }, [donations, statusFilter, searchTerm]);
 
   const loadDonations = async () => {
     try {
@@ -72,6 +103,24 @@ const HungerSpotDashboard = () => {
     }
   };
 
+  const handleMarkDelivered = async (donationId) => {
+    try {
+      setMarkingDelivered(prev => ({ ...prev, [donationId]: true }));
+      await hungerSpotService.markDonationDelivered(donationId);
+      showToast('Donation marked as delivered successfully', 'success');
+      // Reload donations to get updated status
+      await loadDonations();
+    } catch (error) {
+      console.error('Error marking donation as delivered:', error);
+      showToast(
+        error.response?.data?.message || 'Failed to mark donation as delivered',
+        'error'
+      );
+    } finally {
+      setMarkingDelivered(prev => ({ ...prev, [donationId]: false }));
+    }
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
@@ -118,7 +167,7 @@ const HungerSpotDashboard = () => {
         </div>
 
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200">
               Donations Received
             </h2>
@@ -131,20 +180,52 @@ const HungerSpotDashboard = () => {
             </button>
           </div>
 
+          {/* Filter and Search Section */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
+            {/* Search Input */}
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search by donor name, category, or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
+              />
+            </div>
+            {/* Status Filter */}
+            <div className="sm:w-48">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="volunteer_assigned">Volunteer Assigned</option>
+                <option value="in_transit">In Transit</option>
+                <option value="delivered">Delivered</option>
+                <option value="rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
           {loading && donations.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
             </div>
-          ) : donations.length === 0 ? (
+          ) : filteredDonations.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📦</div>
               <p className="text-lg text-gray-600 dark:text-gray-400">
-                No donations received yet
+                {donations.length === 0 
+                  ? 'No donations received yet' 
+                  : 'No donations match your filters'}
               </p>
             </div>
           ) : (
             <div className="space-y-4 sm:space-y-6">
-              {donations.map((donation) => (
+              {filteredDonations.map((donation) => (
                 <div
                   key={donation._id}
                   className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 sm:p-6 border-2 border-gray-200 dark:border-gray-600 shadow-md hover:shadow-lg transition-all duration-200"
@@ -215,6 +296,31 @@ const HungerSpotDashboard = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Mark as Delivered Button */}
+                  {donation.status !== 'delivered' && 
+                   donation.status !== 'rejected' && 
+                   donation.status !== 'cancelled' && (
+                    <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-600">
+                      <button
+                        onClick={() => handleMarkDelivered(donation._id)}
+                        disabled={markingDelivered[donation._id]}
+                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {markingDelivered[donation._id] ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Marking...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>✅</span>
+                            <span>Mark as Delivered</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

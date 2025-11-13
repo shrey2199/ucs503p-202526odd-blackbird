@@ -208,19 +208,38 @@ const Layout = ({ children }) => {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center space-x-2 md:space-x-3 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-primary-50 to-green-50 dark:from-primary-900/30 dark:to-green-900/30 rounded-full border border-primary-200 dark:border-primary-700">
-                      <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-xs md:text-sm">
-                        {user ? user.fullName.charAt(0).toUpperCase() : hungerSpot?.name.charAt(0).toUpperCase() || 'H'}
+                    {userType === 'hungerSpot' ? (
+                      <Link
+                        to="/hunger-spot/account"
+                        className="flex items-center space-x-2 md:space-x-3 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-primary-50 to-green-50 dark:from-primary-900/30 dark:to-green-900/30 rounded-full border border-primary-200 dark:border-primary-700 hover:from-primary-100 hover:to-green-100 dark:hover:from-primary-800/40 dark:hover:to-green-800/40 transition-all cursor-pointer"
+                      >
+                        <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-xs md:text-sm">
+                          {hungerSpot?.name.charAt(0).toUpperCase() || 'H'}
+                        </div>
+                        <div className="flex flex-col hidden md:flex">
+                          <span className="text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            {hungerSpot?.name || 'Hunger Spot'}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                            Hunger Spot
+                          </span>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center space-x-2 md:space-x-3 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-primary-50 to-green-50 dark:from-primary-900/30 dark:to-green-900/30 rounded-full border border-primary-200 dark:border-primary-700">
+                        <div className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-xs md:text-sm">
+                          {user?.fullName.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className="flex flex-col hidden md:flex">
+                          <span className="text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            {user?.fullName || 'User'}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                            {userType}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col hidden md:flex">
-                        <span className="text-xs md:text-sm font-semibold text-gray-800 dark:text-gray-200">
-                          {user ? user.fullName : hungerSpot?.name || 'Hunger Spot'}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                          {userType === 'hungerSpot' ? 'Hunger Spot' : userType}
-                        </span>
-                      </div>
-                    </div>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-lg hover:from-red-600 hover:to-red-700 shadow-md hover:shadow-lg transition-all duration-200"
@@ -339,19 +358,39 @@ const Layout = ({ children }) => {
                           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
                             {userType === 'hungerSpot' ? 'Hunger Spot Info' : 'User Info'}
                           </p>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                              {user ? user.fullName.charAt(0).toUpperCase() : hungerSpot?.name.charAt(0).toUpperCase() || 'H'}
+                          {userType === 'hungerSpot' ? (
+                            <Link
+                              to="/hunger-spot/account"
+                              onClick={handleMobileMenuClose}
+                              className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors p-1 -m-1"
+                            >
+                              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                {hungerSpot?.name.charAt(0).toUpperCase() || 'H'}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                  {hungerSpot?.name || 'Hunger Spot'}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                  Hunger Spot
+                                </span>
+                              </div>
+                            </Link>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                {user?.fullName.charAt(0).toUpperCase() || 'U'}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                  {user?.fullName || 'User'}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                  {userType}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                {user ? user.fullName : hungerSpot?.name || 'Hunger Spot'}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                                {userType === 'hungerSpot' ? 'Hunger Spot' : userType}
-                              </span>
-                            </div>
-                          </div>
+                          )}
                         </div>
 
                         {/* Logout Section */}

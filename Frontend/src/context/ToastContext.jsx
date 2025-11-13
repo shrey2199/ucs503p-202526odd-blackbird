@@ -14,8 +14,11 @@ export const ToastProvider = ({ children }) => {
   const [modal, setModal] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const confirmResolveRef = useRef(null);
+  const onCloseCallbackRef = useRef(null);
 
-  const showToast = useCallback((message, type = 'success') => {
+  const showToast = useCallback((message, type = 'success', onClose = null) => {
+    // Store the callback in a ref so we can access it later
+    onCloseCallbackRef.current = onClose;
     // If there's already a modal closing, wait for it to finish
     if (isClosing) {
       setTimeout(() => {
@@ -32,6 +35,11 @@ export const ToastProvider = ({ children }) => {
     if (isClosing) return; // Prevent multiple close calls
     setIsClosing(true);
     setTimeout(() => {
+      // Call the onClose callback if provided
+      if (onCloseCallbackRef.current) {
+        onCloseCallbackRef.current();
+        onCloseCallbackRef.current = null;
+      }
       setModal(null);
       setIsClosing(false);
     }, 300); // Match animation duration

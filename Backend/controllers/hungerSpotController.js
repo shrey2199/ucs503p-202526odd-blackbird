@@ -184,6 +184,110 @@ exports.updateActiveStatus = catchAsync(async (req, res, next) => {
     });
 });
 
+// UPDATE password for authenticated hunger spot
+exports.updatePassword = catchAsync(async (req, res, next) => {
+    const { passwordCurrent, password, passwordConfirm } = req.body;
+
+    if (!passwordCurrent || !password || !passwordConfirm) {
+        return next(new appError('Please provide current password, new password, and password confirmation', 400));
+    }
+
+    if (password !== passwordConfirm) {
+        return next(new appError('Passwords do not match', 400));
+    }
+
+    if (password.length < 8) {
+        return next(new appError('Password must be at least 8 characters long', 400));
+    }
+
+    const hungerSpot = await HungerSpot.findById(req.hungerSpot._id).select('+password');
+
+    if (!await hungerSpot.correctPassword(passwordCurrent, hungerSpot.password)) {
+        return next(new appError('Your current password is wrong', 400));
+    }
+
+    hungerSpot.password = password;
+    await hungerSpot.save();
+
+    createAndSendToken(hungerSpot, 200, res);
+});
+
+// UPDATE profile for authenticated hunger spot
+exports.updateMe = catchAsync(async (req, res, next) => {
+    if (req.body.password || req.body.passwordConfirm) {
+        return next(new appError('This route cannot update passwords. Use /me/password instead.', 400));
+    }
+
+    // Filter allowed fields
+    const allowedFields = ['name', 'contactPerson', 'location'];
+    const filteredBody = {};
+    
+    allowedFields.forEach(field => {
+        if (req.body[field] !== undefined) {
+            filteredBody[field] = req.body[field];
+        }
+    });
+
+    // If updating location, ensure required fields are present
+    if (filteredBody.location) {
+        if (!filteredBody.location.address || !filteredBody.location.state || !filteredBody.location.coordinates) {
+            return next(new appError('Location must include address, state, and coordinates', 400));
+        }
+    }
+
+    const hungerSpot = await HungerSpot.findByIdAndUpdate(
+        req.hungerSpot._id,
+        filteredBody,
+        { new: true, runValidators: true }
+    );
+
+    if (!hungerSpot) {
+        return next(new appError('Hunger spot not found', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            hungerSpot
+        }
+    });
+});
+
+// MARK donation as delivered
+exports.markDonationDelivered = catchAsync(async (req, res, next) => {
+    const { donationId } = req.params;
+    const hungerSpotId = req.hungerSpot._id;
+
+    const donation = await Food.findOne({
+        _id: donationId,
+        assignedHungerSpot: hungerSpotId
+    });
+
+    if (!donation) {
+        return next(new appError('Donation not found or not assigned to this hunger spot', 404));
+    }
+
+    // Only allow marking as delivered if not already delivered, rejected, or cancelled
+    if (donation.status === 'delivered') {
+        return next(new appError('Donation is already marked as delivered', 400));
+    }
+
+    if (donation.status === 'rejected' || donation.status === 'cancelled') {
+        return next(new appError('Cannot mark rejected or cancelled donations as delivered', 400));
+    }
+
+    donation.status = 'delivered';
+    donation.deliveryTime = new Date();
+    await donation.save();
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            donation
+        }
+    });
+});
+
 // GET all donations for a HungerSpot by ID (public endpoint, no auth required)
 exports.getDonationsByHungerSpot = async (req, res) => {
   try {

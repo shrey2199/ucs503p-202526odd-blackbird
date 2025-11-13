@@ -11,6 +11,7 @@ import HungerSpotLogin from './pages/HungerSpotLogin';
 import DonorDashboard from './pages/DonorDashboard';
 import VolunteerDashboard from './pages/VolunteerDashboard';
 import HungerSpotDashboard from './pages/HungerSpotDashboard';
+import HungerSpotAccount from './pages/HungerSpotAccount';
 import AcceptDonation from './pages/AcceptDonation';
 
 function App() {
@@ -46,6 +47,14 @@ function App() {
             element={
               <ProtectedRoute requiredUserType="hungerSpot">
                 <HungerSpotDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hunger-spot/account"
+            element={
+              <ProtectedRoute requiredUserType="hungerSpot">
+                <HungerSpotAccount />
               </ProtectedRoute>
             }
           />
