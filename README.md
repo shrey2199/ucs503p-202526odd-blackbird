@@ -43,9 +43,12 @@ Non-profit organizations face two critical challenges:
 ### 🔐 Authentication & Security
 - **OTP-based verification** via Twilio WhatsApp integration
 - **JWT-based authentication** with secure token management
-- **Role-based access control** (Donor, Volunteer)
+- **Role-based access control** (Donor, Volunteer, Hunger Spot)
 - **Phone number normalization** supporting multiple formats
 - **Password encryption** using bcryptjs
+- **Forgot password** with OTP verification
+- **Resend OTP** functionality with cooldown timer
+- **WhatsApp sandbox join** popup for new users
 
 ### 🗺️ Location Services
 - **Interactive maps** using Leaflet and React-Leaflet
@@ -70,21 +73,37 @@ Non-profit organizations face two critical challenges:
 - **Dark mode** with system preference detection
 - **Responsive design** for all device sizes
 - **Animated modals** and smooth transitions
-- **Custom toast notifications** replacing browser alerts
-- **Intuitive dashboards** for donors and volunteers
+- **Custom toast notifications** with callback support
+- **Intuitive dashboards** for donors, volunteers, and hunger spots
+- **Unified navbar**: Single avatar dropdown with theme, user info, and logout
+- **Animated dropdowns**: Smooth slide and fade animations
+- **Mobile-friendly**: Optimized for all screen sizes
 
 ### 📊 Donation Management
 - **Donor dashboard**: Create, track, and manage donations
 - **Volunteer dashboard**: Accept donations and update delivery status
+- **Hunger spot dashboard**: View assigned donations, filter by status, search donations
 - **Status tracking**: Real-time updates (pending → assigned → in transit → delivered)
 - **Donor-willing deliveries**: Option for donors to deliver directly to selected hunger spots
 - **Hunger spot selection**: Interactive selection of nearest matching hunger spots
+- **Donation filtering**: Filter donations by status (all, pending, assigned, in transit, delivered, rejected, cancelled)
+- **Donation search**: Search donations by donor name, category, or description
+- **Mark as delivered**: Hunger spots can mark non-delivered donations as delivered
 
 ### 🏢 Hunger Spot Management
+- **Hunger spot login**: State and hunger spot selection with password authentication
 - **Category-based matching** (young/everyone)
-- **Capacity tracking** for hunger spots
+- **Active/inactive status** toggle (controls donation assignment only)
 - **Contact person management**
-- **Active/inactive status** control
+- **State-based filtering**: Login dropdowns filtered by Indian states
+- **Searchable dropdowns**: Easy selection of states and hunger spots
+
+### 👤 Account Management
+- **User account page**: Password change and profile updates for donors/volunteers
+- **Hunger spot account page**: Password change and profile updates for hunger spots
+- **Location updates**: Interactive map for updating user/hunger spot locations
+- **Profile updates**: Update name, organization type (donors), contact person (hunger spots)
+- **Password security**: Secure password change with current password verification
 
 ## 🛠️ Tech Stack
 
@@ -165,6 +184,7 @@ Non-profit organizations face two critical challenges:
 - Twilio account with WhatsApp Sandbox access
 - Groq API key (for AI features)
 - Docker (optional, for containerized deployment)
+- WhatsApp Sandbox: Join by sending "join grain-especially" to +1 415 523 8886
 
 ### Installation
 
@@ -274,14 +294,26 @@ second-serving/
 │   │   │   ├── Signup.jsx
 │   │   │   ├── Login.jsx
 │   │   │   ├── VerifyOtp.jsx
+│   │   │   ├── ForgotPassword.jsx
+│   │   │   ├── ResetPassword.jsx
+│   │   │   ├── HungerSpotLogin.jsx
 │   │   │   ├── DonorDashboard.jsx
 │   │   │   ├── VolunteerDashboard.jsx
+│   │   │   ├── HungerSpotDashboard.jsx
+│   │   │   ├── HungerSpotAccount.jsx
+│   │   │   ├── UserAccount.jsx
 │   │   │   └── AcceptDonation.jsx
 │   │   ├── services/        # API service functions
 │   │   │   ├── api.js
 │   │   │   ├── authService.js
 │   │   │   ├── donorService.js
-│   │   │   └── volunteerService.js
+│   │   │   ├── volunteerService.js
+│   │   │   └── hungerSpotService.js
+│   │   ├── components/      # Reusable components
+│   │   │   ├── Layout.jsx
+│   │   │   ├── LocationMap.jsx
+│   │   │   ├── ProtectedRoute.jsx
+│   │   │   └── SearchableSelect.jsx
 │   │   ├── config/          # Configuration files
 │   │   │   └── api.js
 │   │   └── App.jsx          # Main app component
@@ -298,8 +330,13 @@ second-serving/
 
 ### Authentication Endpoints
 - `POST /api/v1/users/signup` - User registration
+- `POST /api/v1/users/resendOtp` - Resend OTP for signup
 - `POST /api/v1/users/verify` - OTP verification
 - `POST /api/v1/users/login` - User login
+- `POST /api/v1/users/forgotpassword` - Send OTP for password reset
+- `PATCH /api/v1/users/resetPassword` - Reset password with OTP
+- `PATCH /api/v1/users/updateMyPassword` - Update password (authenticated)
+- `PATCH /api/v1/users/updateMe` - Update user profile (authenticated)
 
 ### Donor Endpoints
 - `POST /api/v1/donor/donations` - Create donation
@@ -316,7 +353,13 @@ second-serving/
 
 ### Hunger Spot Endpoints
 - `GET /api/v1/hunger-spots` - Get all hunger spots
-- `POST /api/v1/hunger-spots` - Create hunger spot (admin)
+- `GET /api/v1/hunger-spots/:id` - Get hunger spot by ID
+- `POST /api/v1/hunger-spots/login` - Hunger spot login
+- `GET /api/v1/hunger-spots/me/donations` - Get assigned donations (authenticated)
+- `PATCH /api/v1/hunger-spots/me/status` - Toggle active status (authenticated)
+- `PATCH /api/v1/hunger-spots/me/password` - Update password (authenticated)
+- `PATCH /api/v1/hunger-spots/me` - Update profile (authenticated)
+- `PATCH /api/v1/hunger-spots/me/donations/:donationId/delivered` - Mark donation as delivered (authenticated)
 
 ## 🌟 Key Highlights
 
@@ -346,6 +389,22 @@ second-serving/
 - Smooth animations and transitions
 - Dark mode with system preference detection
 
+## 🚀 Deployment
+
+### Heroku Deployment
+1. Create a Heroku app
+2. Set environment variables in Heroku config
+3. Push to Heroku: `git push heroku main`
+4. The app will automatically build and deploy
+
+### Docker Deployment
+1. Build the image: `docker build -t second-serving .`
+2. Run with docker-compose: `docker-compose up`
+3. Access at `http://localhost:8000`
+
+### Environment Variables
+See `.env.example` for all required environment variables.
+
 ## 🔮 Future Enhancements
 
 - [ ] Real-time tracking using WebSockets
@@ -358,6 +417,7 @@ second-serving/
 - [ ] Rating and review system
 - [ ] Automated route optimization
 - [ ] Integration with food delivery APIs
+- [ ] Email notifications as alternative to WhatsApp
 
 ## 🙏 Acknowledgments
 
